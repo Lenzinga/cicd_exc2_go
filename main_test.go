@@ -229,3 +229,36 @@ func TestSearchProductsByName(t *testing.T) {
 		}
 	}
 }
+
+func TestSortProducts(t *testing.T) {
+	clearTable()
+
+	// Insert in unsorted order
+	a.DB.Exec("INSERT INTO products(name, price) VALUES($1, $2)", "Zebra", 30.0)
+	a.DB.Exec("INSERT INTO products(name, price) VALUES($1, $2)", "Apple", 10.0)
+	a.DB.Exec("INSERT INTO products(name, price) VALUES($1, $2)", "Mango", 20.0)
+
+	// --- Test sort by name ascending ---
+	req, _ := http.NewRequest("GET", "/products?sort=name&order=asc", nil)
+	response := executeRequest(req)
+	checkResponseCode(t, http.StatusOK, response.Code)
+
+	var productsByName []product
+	json.Unmarshal(response.Body.Bytes(), &productsByName)
+
+	if productsByName[0].Name != "Apple" || productsByName[2].Name != "Zebra" {
+		t.Errorf("Products not sorted by name ascending: %+v", productsByName)
+	}
+
+	// --- Test sort by price descending ---
+	req, _ = http.NewRequest("GET", "/products?sort=price&order=desc", nil)
+	response = executeRequest(req)
+	checkResponseCode(t, http.StatusOK, response.Code)
+
+	var productsByPrice []product
+	json.Unmarshal(response.Body.Bytes(), &productsByPrice)
+
+	if productsByPrice[0].Price != 30.0 || productsByPrice[2].Price != 10.0 {
+		t.Errorf("Products not sorted by price descending: %+v", productsByPrice)
+	}
+}
