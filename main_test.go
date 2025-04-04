@@ -11,6 +11,8 @@ import (
 	"net/http/httptest"
 	"strconv"
 
+	"strings"
+
 	git "github.com/Lenzinga/cicd_exc2_go" // Adjust the import path as necessary
 )
 
@@ -46,6 +48,12 @@ const tableCreationQuery = `CREATE TABLE IF NOT EXISTS products
     price NUMERIC(10,2) NOT NULL DEFAULT 0.00,
     CONSTRAINT products_pkey PRIMARY KEY (id)
 )`
+
+type product struct {
+	ID    int     `json:"id"`
+	Name  string  `json:"name"`
+	Price float64 `json:"price"`
+}
 
 func TestEmptyTable(t *testing.T) {
 	clearTable()
@@ -189,4 +197,35 @@ func TestDeleteProduct(t *testing.T) {
 	req, _ = http.NewRequest("GET", "/product/1", nil)
 	response = executeRequest(req)
 	checkResponseCode(t, http.StatusNotFound, response.Code)
+}
+
+func TestSearchProductsByName(t *testing.T) {
+	clearTable()
+
+	// Add some products
+	a.DB.Exec("INSERT INTO products(name, price) VALUES($1, $2)", "Running Shoes", 59.99)
+	a.DB.Exec("INSERT INTO products(name, price) VALUES($1, $2)", "Basketball Shoes", 89.99)
+	a.DB.Exec("INSERT INTO products(name, price) VALUES($1, $2)", "Backpack", 39.99)
+
+	// Search for "shoes"
+	req, _ := http.NewRequest("GET", "/products/search?name=shoes", nil)
+	response := executeRequest(req)
+
+	checkResponseCode(t, http.StatusOK, response.Code)
+
+	var products []product
+	err := json.Unmarshal(response.Body.Bytes(), &products)
+	if err != nil {
+		t.Errorf("Failed to parse response JSON: %v", err)
+	}
+
+	if len(products) != 2 {
+		t.Errorf("Expected 2 products, got %d", len(products))
+	}
+
+	for _, p := range products {
+		if !strings.Contains(strings.ToLower(p.Name), "shoes") {
+			t.Errorf("Product name does not contain 'shoes': %s", p.Name)
+		}
+	}
 }
