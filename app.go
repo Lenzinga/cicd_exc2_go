@@ -82,7 +82,18 @@ func (a *App) getProducts(w http.ResponseWriter, r *http.Request) {
 		start = 0
 	}
 
-	products, err := getProducts(a.DB, start, count)
+	sort := r.FormValue("sort")
+	order := r.FormValue("order")
+
+	// Basic sanitization
+	if sort != "name" && sort != "price" {
+		sort = "id" // default sort
+	}
+	if order != "asc" && order != "desc" {
+		order = "asc" // default order
+	}
+
+	products, err := getProducts(a.DB, start, count, sort, order)
 	if err != nil {
 		respondWithError(w, http.StatusInternalServerError, err.Error())
 		return

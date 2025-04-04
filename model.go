@@ -2,6 +2,7 @@ package main
 
 import (
 	"database/sql"
+	"fmt"
 )
 
 type product struct {
@@ -41,19 +42,19 @@ func (p *product) createProduct(db *sql.DB) error {
 	return nil
 }
 
-func getProducts(db *sql.DB, start, count int) ([]product, error) {
-	rows, err := db.Query(
-		"SELECT id, name,  price FROM products LIMIT $1 OFFSET $2",
-		count, start)
+func getProducts(db *sql.DB, start, count int, sort, order string) ([]product, error) {
+	query := fmt.Sprintf(
+		"SELECT id, name, price FROM products ORDER BY %s %s LIMIT $1 OFFSET $2",
+		sort, order,
+	)
 
+	rows, err := db.Query(query, count, start)
 	if err != nil {
 		return nil, err
 	}
-
 	defer rows.Close()
 
 	products := []product{}
-
 	for rows.Next() {
 		var p product
 		if err := rows.Scan(&p.ID, &p.Name, &p.Price); err != nil {
@@ -61,7 +62,6 @@ func getProducts(db *sql.DB, start, count int) ([]product, error) {
 		}
 		products = append(products, p)
 	}
-
 	return products, nil
 }
 
