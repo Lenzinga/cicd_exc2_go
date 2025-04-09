@@ -1,0 +1,52 @@
+name: Go
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+env:
+  APP_DB_NAME: database1
+  APP_DB_USERNAME: user1
+  APP_DB_PASSWORD: ci45cd
+  APP_DB_HOST: localhost
+  APP_DB_PORT: 5432
+
+jobs:
+  build:
+    name: Build and Test Code
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Go
+        uses: actions/setup-go@v3
+        with:
+          go-version: '1.24.1'
+
+      - name: Set up Docker Compose
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y docker-compose
+
+      - name: Start services via Docker Compose
+        run: docker-compose up -d
+        working-directory: ${{ github.workspace }}
+
+      - name: Wait for PostgreSQL to be ready
+        run: |
+          echo "Waiting for PostgreSQL..."
+          until docker exec $(docker ps -qf "ancestor=postgres") pg_isready -U $APP_DB_USERNAME -d $APP_DB_NAME; do
+            sleep 2
+          done
+
+      - name: Build
+        run: go build -v ./...
+
+      - name: Test
+        run: go test -v ./...
+
+      - name: Shutdown Docker Compose
+        run: docker-compose down
