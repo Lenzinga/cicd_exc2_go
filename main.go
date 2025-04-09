@@ -10,7 +10,4 @@ func main() {
 		os.Getenv("APP_DB_NAME"))
 
 	a.Run(":8010")
-
-	b := true // Added for CI pipeline triggering
-	_ = b     // Added for CI pipeline triggering
 }

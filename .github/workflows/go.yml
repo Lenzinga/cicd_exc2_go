@@ -50,3 +50,19 @@ jobs:
 
       - name: Shutdown Docker Compose
         run: docker-compose down
+        
+  sonarcloud:
+    name: SonarCloud Code Analysis
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Needed for better analysis reporting
+
+      - name: SonarCloud Scan
+        uses: sonarsource/sonarcloud-github-action@master
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
