@@ -15,32 +15,32 @@ env:
 
 jobs:
   build:
-    name: Build and Test Code
+    name: Build, Test, and Push Docker Image
     runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres
+        env:
+          POSTGRES_USER: user1
+          POSTGRES_PASSWORD: ci45cd
+          POSTGRES_DB: database1
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready -U user1 -d database1
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Set up Go
-        uses: actions/setup-go@v3
+        uses: actions/setup-go@v4
         with:
-          go-version: '1.24.1'
-
-      - name: Set up Docker Compose
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y docker-compose
-
-      - name: Start services via Docker Compose
-        run: docker-compose up -d
-        working-directory: ${{ github.workspace }}
-
-      - name: Wait for PostgreSQL to be ready
-        run: |
-          echo "Waiting for PostgreSQL..."
-          until docker exec $(docker ps -qf "ancestor=postgres") pg_isready -U $APP_DB_USERNAME -d $APP_DB_NAME; do
-            sleep 2
-          done
+          go-version: '1.24'
 
       - name: Build
         run: go build -v ./...
@@ -48,8 +48,18 @@ jobs:
       - name: Test
         run: go test -v ./...
 
-      - name: Shutdown Docker Compose
-        run: docker-compose down
+      - name: Log in to DockerHub
+        run: echo "${{ secrets.REGISTRY_PASSWORD }}" | docker login -u "${{ secrets.REGISTRY_USER }}" --password-stdin
+
+      - name: Build and Push Docker Image
+        run: |
+          IMAGE=yourdockerhubusername/yourimagename
+          GIT_SHA=$(git rev-parse --short HEAD)
+          docker build -t $IMAGE:latest .
+          docker tag $IMAGE:latest $IMAGE:$GIT_SHA
+          docker push $IMAGE:latest
+          docker push $IMAGE:$GIT_SHA
+
         
   sonarcloud:
     name: SonarCloud Code Analysis

@@ -9,8 +9,10 @@ func main() {
 		os.Getenv("APP_DB_PASSWORD"),
 		os.Getenv("APP_DB_NAME"))
 
-	a.Run(":8010")
+	port := os.Getenv("APP_PORT")
+	if port == "" {
+		port = "8010"
+	}
 
-	b := true // Added for CI pipeline triggering
-	_ = b     // Added for CI pipeline triggering
+	a.Run(":" + port)
 }
