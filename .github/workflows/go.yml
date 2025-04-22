@@ -60,6 +60,24 @@ jobs:
           docker push $IMAGE:latest
           docker push $IMAGE:$GIT_SHA
 
+      - name: Trivy - Image Scan
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: fhhaglo/cicd_exc2_go:latest
+          format: table
+          severity: CRITICAL
+          ignore-unfixed: true
+          exit-code: 1
+    
+      - name: Trivy - Filesystem Scan
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: fs
+          scan-ref: .
+          severity: CRITICAL
+          ignore-unfixed: true
+          exit-code: 1
+
         
   sonarcloud:
     name: SonarCloud Code Analysis
