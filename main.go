@@ -15,4 +15,8 @@ func main() {
 	}
 
 	a.Run(":" + port)
+
+	// trigger action to test the pipeline
+	unusedVariable := "This is just to trigger the action"
+	_ = unusedVariable // Avoid compiler unused variable warning
 }
